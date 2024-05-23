@@ -1,0 +1,566 @@
+definitions:
+  cronjob.TaskPayload:
+    properties:
+      exec_right_now:
+        description: 'true: 馬上執行'
+        type: boolean
+      group_name:
+        description: 群組名稱
+        type: string
+      interval_pattern:
+        description: 支援 `0 0 * * * *` `@hourly` `1685935821`
+        type: string
+      job_id:
+        description: 排程ID
+        type: string
+      memo:
+        description: 備註
+        type: string
+      name:
+        description: 排程名稱
+        type: string
+      next:
+        description: 下次執行時間
+        type: string
+      nsq_message:
+        description: nsq回傳的訊息
+        example: ""
+        type: string
+      nsq_topic:
+        description: type選擇nsq,topic不能為空
+        type: string
+      prev:
+        description: 上次執行時間
+        type: string
+      register:
+        description: 註冊時間
+        type: string
+      request_url:
+        description: 網址
+        type: string
+      retry:
+        description: 'true: http失敗重新執行'
+        type: boolean
+      status:
+        description: 1:執行中
+        type: integer
+      type:
+        description: '`nsq` `http`'
+        type: string
+    type: object
+  cronjob.TaskPayloadReq:
+    properties:
+      exec_right_now:
+        description: 'true: 馬上執行'
+        example: false
+        type: boolean
+      group_name:
+        description: 群組名稱
+        example: test
+        type: string
+      interval_pattern:
+        description: 支援 `0 0 * * * *` `@hourly` `1685935821`
+        example: 0 * * * * *
+        type: string
+      name:
+        description: 排程名稱
+        example: job01
+        type: string
+      nsq_message:
+        description: 'nsq回傳的訊息 ex.{"game_name": "BBLT","draw_mode":1,"open_timestamp":
+          1686116327,"close_timestamp": 1686116387}'
+        example: ""
+        type: string
+      nsq_topic:
+        description: type選擇nsq,topic不能為空
+        example: ""
+        type: string
+      request_url:
+        description: 網址
+        example: http://127.0.0.1/api/ping
+        type: string
+      retry:
+        description: 'true: http失敗重新執行'
+        example: false
+        type: boolean
+      type:
+        description: '`nsq` `http`'
+        example: http
+        type: string
+    required:
+    - group_name
+    - interval_pattern
+    - name
+    - type
+    type: object
+  httpserver.DataRespSchema:
+    properties:
+      data: {}
+      errors:
+        items: {}
+        type: array
+    type: object
+  httpserver.Pong:
+    properties:
+      pong:
+        type: string
+    type: object
+  httpserver.SuccessRes:
+    properties:
+      errors:
+        items: {}
+        type: array
+      success:
+        type: boolean
+    type: object
+info:
+  contact: {}
+paths:
+  /api/game/list:
+    get:
+      parameters:
+      - description: group_name
+        in: query
+        name: group_name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: '{"data":["test"],"errors":[]}'
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpserver.DataRespSchema'
+            - properties:
+                data:
+                  items:
+                    type: string
+                  type: array
+              type: object
+      summary: 查詢排程遊戲清單
+      tags:
+      - CronJob Query
+  /api/group/list:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: '{"data":["test"],"errors":[]}'
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpserver.DataRespSchema'
+            - properties:
+                data:
+                  items:
+                    type: string
+                  type: array
+              type: object
+      summary: 查詢排程Group清單
+      tags:
+      - CronJob Query
+  /api/job/active/{group}/{id}:
+    put:
+      parameters:
+      - description: group_name
+        in: path
+        name: group
+        required: true
+        type: string
+      - description: job_id
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: '{"success":true,"errors":[]}'
+          schema:
+            $ref: '#/definitions/httpserver.SuccessRes'
+      summary: 啟用排程
+      tags:
+      - CronJob Update
+  /api/job/add:
+    post:
+      parameters:
+      - description: 排程資料
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/cronjob.TaskPayloadReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: '{"success":true,"errors":[]}'
+          schema:
+            $ref: '#/definitions/httpserver.SuccessRes'
+      summary: 註冊排程任務
+      tags:
+      - CronJob Update
+  /api/job/delete/{group}/{id}:
+    delete:
+      parameters:
+      - description: group_name
+        in: path
+        name: group
+        required: true
+        type: string
+      - description: job_id
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: '{"success":true,"errors":[]}'
+          schema:
+            $ref: '#/definitions/httpserver.SuccessRes'
+      summary: 刪除註冊任務
+      tags:
+      - CronJob Update
+  /api/job/game/list:
+    get:
+      parameters:
+      - description: group_name
+        in: query
+        name: group_name
+        required: true
+        type: string
+      - description: game_type
+        in: query
+        name: game_type
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: '{"data":[],"errors":[]}'
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpserver.DataRespSchema'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/cronjob.TaskPayload'
+                  type: array
+              type: object
+      summary: 查詢遊戲排程任務清單 By Game
+      tags:
+      - CronJob Tasks List
+  /api/job/info:
+    get:
+      parameters:
+      - description: group_name
+        in: query
+        name: group_name
+        required: true
+        type: string
+      - description: job_id
+        in: query
+        name: job_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: '{"data":[],"errors":[]}'
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpserver.DataRespSchema'
+            - properties:
+                data:
+                  $ref: '#/definitions/cronjob.TaskPayload'
+              type: object
+      summary: 查詢單一排程資料
+      tags:
+      - CronJob Query
+  /api/job/list:
+    get:
+      parameters:
+      - description: group_name
+        in: query
+        name: group_name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: '{"data":[],"errors":[]}'
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpserver.DataRespSchema'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/cronjob.TaskPayload'
+                  type: array
+              type: object
+      summary: 查詢已註冊排程任務清單 By Group
+      tags:
+      - CronJob Tasks List
+  /api/job/match/list:
+    get:
+      parameters:
+      - description: group_name
+        in: query
+        name: group_name
+        required: true
+        type: string
+      - description: match by name
+        in: query
+        name: match
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: '{"data":[],"errors":[]}'
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpserver.DataRespSchema'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/cronjob.TaskPayload'
+                  type: array
+              type: object
+      summary: 查詢已註冊排程任務清單 By Match
+      tags:
+      - CronJob Tasks List
+  /api/job/pause/{group}/{id}:
+    put:
+      parameters:
+      - description: group_name
+        in: path
+        name: group
+        required: true
+        type: string
+      - description: job_id
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: '{"success":true,"errors":[]}'
+          schema:
+            $ref: '#/definitions/httpserver.SuccessRes'
+      summary: 暫停排程
+      tags:
+      - CronJob Update
+  /api/job/query:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: '{"data":{"running":0,"register":0},"errors":[]}'
+          schema:
+            type: object
+      summary: 查詢排程註冊數和執行數量
+      tags:
+      - CronJob Query
+  /api/job/query/{id}:
+    get:
+      parameters:
+      - description: job_id
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses: {}
+      summary: 查詢排程狀態
+      tags:
+      - CronJob Query
+  /api/job/replace:
+    post:
+      parameters:
+      - description: 排程資料
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/cronjob.TaskPayloadReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: '{"success":true,"errors":[]}'
+          schema:
+            $ref: '#/definitions/httpserver.SuccessRes'
+      summary: 更新排程任務
+      tags:
+      - CronJob Update
+  /api/jobs/delete/{group}:
+    delete:
+      parameters:
+      - description: group_name
+        in: path
+        name: group
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: '{"success":true,"errors":[]}'
+          schema:
+            $ref: '#/definitions/httpserver.SuccessRes'
+      summary: 刪除Grop所有註冊任務
+      tags:
+      - CronJob Update
+  /api/jobs/delete/{group}/{match}:
+    delete:
+      parameters:
+      - description: group_name
+        in: path
+        name: group
+        required: true
+        type: string
+      - description: match
+        in: path
+        name: match
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: '{"success":true,"errors":[]}'
+          schema:
+            $ref: '#/definitions/httpserver.SuccessRes'
+      summary: 刪除註冊任務 By Match
+      tags:
+      - CronJob Update
+  /api/jobs/export:
+    post:
+      description: Export all jobs as a JSON file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: file
+      summary: 匯出任務 By All
+      tags:
+      - CronJob Import/export
+  /api/jobs/export/{group}:
+    post:
+      description: Export all jobs as a JSON file
+      parameters:
+      - description: group_name
+        in: path
+        name: group
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: file
+      summary: 匯出任務 By Group
+      tags:
+      - CronJob Import/export
+  /api/jobs/export/{group}/{match}:
+    post:
+      description: Export all jobs as a JSON file
+      parameters:
+      - description: group_name
+        in: path
+        name: group
+        required: true
+        type: string
+      - description: match
+        in: path
+        name: match
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: file
+      summary: 匯出任務 By Match
+      tags:
+      - CronJob Import/export
+  /api/jobs/import:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Import a file using a form-data request
+      parameters:
+      - description: File to import
+        in: formData
+        name: file
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: '{"message": "imported successfully"}'
+          schema:
+            type: string
+      summary: 匯入任務
+      tags:
+      - CronJob Import/export
+  /api/ping:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: '{"data":{"pong":"pong"}, "errors":[]}'
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpserver.DataRespSchema'
+            - properties:
+                data:
+                  $ref: '#/definitions/httpserver.Pong'
+              type: object
+      summary: 確認服務連線
+  /api/service/cronjob/start:
+    post:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: '{"success":true,"errors":[]}'
+          schema:
+            $ref: '#/definitions/httpserver.SuccessRes'
+      summary: 排程功能啟動
+      tags:
+      - Service
+  /api/service/cronjob/stop:
+    post:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: '{"success":true,"errors":[]}'
+          schema:
+            $ref: '#/definitions/httpserver.SuccessRes'
+      summary: 排程功能停止
+      tags:
+      - Service
+swagger: "2.0"

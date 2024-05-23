@@ -1,0 +1,880 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "contact": {}
+    },
+    "paths": {
+        "/api/game/list": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "CronJob Query"
+                ],
+                "summary": "查詢排程遊戲清單",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "group_name",
+                        "name": "group_name",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "{\"data\":[\"test\"],\"errors\":[]}",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/httpserver.DataRespSchema"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "string"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/api/group/list": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "CronJob Query"
+                ],
+                "summary": "查詢排程Group清單",
+                "responses": {
+                    "200": {
+                        "description": "{\"data\":[\"test\"],\"errors\":[]}",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/httpserver.DataRespSchema"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "string"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/api/job/active/{group}/{id}": {
+            "put": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "CronJob Update"
+                ],
+                "summary": "啟用排程",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "group_name",
+                        "name": "group",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "job_id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "{\"success\":true,\"errors\":[]}",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.SuccessRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/job/add": {
+            "post": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "CronJob Update"
+                ],
+                "summary": "註冊排程任務",
+                "parameters": [
+                    {
+                        "description": "排程資料",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/cronjob.TaskPayloadReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "{\"success\":true,\"errors\":[]}",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.SuccessRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/job/delete/{group}/{id}": {
+            "delete": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "CronJob Update"
+                ],
+                "summary": "刪除註冊任務",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "group_name",
+                        "name": "group",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "job_id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "{\"success\":true,\"errors\":[]}",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.SuccessRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/job/game/list": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "CronJob Tasks List"
+                ],
+                "summary": "查詢遊戲排程任務清單 By Game",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "group_name",
+                        "name": "group_name",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "game_type",
+                        "name": "game_type",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "{\"data\":[],\"errors\":[]}",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/httpserver.DataRespSchema"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/cronjob.TaskPayload"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/api/job/info": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "CronJob Query"
+                ],
+                "summary": "查詢單一排程資料",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "group_name",
+                        "name": "group_name",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "job_id",
+                        "name": "job_id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "{\"data\":[],\"errors\":[]}",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/httpserver.DataRespSchema"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/cronjob.TaskPayload"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/api/job/list": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "CronJob Tasks List"
+                ],
+                "summary": "查詢已註冊排程任務清單 By Group",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "group_name",
+                        "name": "group_name",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "{\"data\":[],\"errors\":[]}",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/httpserver.DataRespSchema"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/cronjob.TaskPayload"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/api/job/match/list": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "CronJob Tasks List"
+                ],
+                "summary": "查詢已註冊排程任務清單 By Match",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "group_name",
+                        "name": "group_name",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "match by name",
+                        "name": "match",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "{\"data\":[],\"errors\":[]}",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/httpserver.DataRespSchema"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/cronjob.TaskPayload"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/api/job/pause/{group}/{id}": {
+            "put": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "CronJob Update"
+                ],
+                "summary": "暫停排程",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "group_name",
+                        "name": "group",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "job_id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "{\"success\":true,\"errors\":[]}",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.SuccessRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/job/query": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "CronJob Query"
+                ],
+                "summary": "查詢排程註冊數和執行數量",
+                "responses": {
+                    "200": {
+                        "description": "{\"data\":{\"running\":0,\"register\":0},\"errors\":[]}",
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/job/query/{id}": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "CronJob Query"
+                ],
+                "summary": "查詢排程狀態",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "job_id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {}
+            }
+        },
+        "/api/job/replace": {
+            "post": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "CronJob Update"
+                ],
+                "summary": "更新排程任務",
+                "parameters": [
+                    {
+                        "description": "排程資料",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/cronjob.TaskPayloadReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "{\"success\":true,\"errors\":[]}",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.SuccessRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/jobs/delete/{group}": {
+            "delete": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "CronJob Update"
+                ],
+                "summary": "刪除Grop所有註冊任務",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "group_name",
+                        "name": "group",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "{\"success\":true,\"errors\":[]}",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.SuccessRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/jobs/delete/{group}/{match}": {
+            "delete": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "CronJob Update"
+                ],
+                "summary": "刪除註冊任務 By Match",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "group_name",
+                        "name": "group",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "match",
+                        "name": "match",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "{\"success\":true,\"errors\":[]}",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.SuccessRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/jobs/export": {
+            "post": {
+                "description": "Export all jobs as a JSON file",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "CronJob Import/export"
+                ],
+                "summary": "匯出任務 By All",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "file"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/jobs/export/{group}": {
+            "post": {
+                "description": "Export all jobs as a JSON file",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "CronJob Import/export"
+                ],
+                "summary": "匯出任務 By Group",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "group_name",
+                        "name": "group",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "file"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/jobs/export/{group}/{match}": {
+            "post": {
+                "description": "Export all jobs as a JSON file",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "CronJob Import/export"
+                ],
+                "summary": "匯出任務 By Match",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "group_name",
+                        "name": "group",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "match",
+                        "name": "match",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "file"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/jobs/import": {
+            "post": {
+                "description": "Import a file using a form-data request",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "CronJob Import/export"
+                ],
+                "summary": "匯入任務",
+                "parameters": [
+                    {
+                        "type": "file",
+                        "description": "File to import",
+                        "name": "file",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "{\"message\": \"imported successfully\"}",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/ping": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "確認服務連線",
+                "responses": {
+                    "200": {
+                        "description": "{\"data\":{\"pong\":\"pong\"}, \"errors\":[]}",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/httpserver.DataRespSchema"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/httpserver.Pong"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/api/service/cronjob/start": {
+            "post": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Service"
+                ],
+                "summary": "排程功能啟動",
+                "responses": {
+                    "200": {
+                        "description": "{\"success\":true,\"errors\":[]}",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.SuccessRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/service/cronjob/stop": {
+            "post": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Service"
+                ],
+                "summary": "排程功能停止",
+                "responses": {
+                    "200": {
+                        "description": "{\"success\":true,\"errors\":[]}",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.SuccessRes"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "cronjob.TaskPayload": {
+            "type": "object",
+            "properties": {
+                "exec_right_now": {
+                    "description": "true: 馬上執行",
+                    "type": "boolean"
+                },
+                "group_name": {
+                    "description": "群組名稱",
+                    "type": "string"
+                },
+                "interval_pattern": {
+                    "description": "支援 `0 0 * * * *` `@hourly` `1685935821`",
+                    "type": "string"
+                },
+                "job_id": {
+                    "description": "排程ID",
+                    "type": "string"
+                },
+                "memo": {
+                    "description": "備註",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "排程名稱",
+                    "type": "string"
+                },
+                "next": {
+                    "description": "下次執行時間",
+                    "type": "string"
+                },
+                "nsq_message": {
+                    "description": "nsq回傳的訊息",
+                    "type": "string",
+                    "example": ""
+                },
+                "nsq_topic": {
+                    "description": "type選擇nsq,topic不能為空",
+                    "type": "string"
+                },
+                "prev": {
+                    "description": "上次執行時間",
+                    "type": "string"
+                },
+                "register": {
+                    "description": "註冊時間",
+                    "type": "string"
+                },
+                "request_url": {
+                    "description": "網址",
+                    "type": "string"
+                },
+                "retry": {
+                    "description": "true: http失敗重新執行",
+                    "type": "boolean"
+                },
+                "status": {
+                    "description": "1:執行中",
+                    "type": "integer"
+                },
+                "type": {
+                    "description": "`nsq` `http`",
+                    "type": "string"
+                }
+            }
+        },
+        "cronjob.TaskPayloadReq": {
+            "type": "object",
+            "required": [
+                "group_name",
+                "interval_pattern",
+                "name",
+                "type"
+            ],
+            "properties": {
+                "exec_right_now": {
+                    "description": "true: 馬上執行",
+                    "type": "boolean",
+                    "example": false
+                },
+                "group_name": {
+                    "description": "群組名稱",
+                    "type": "string",
+                    "example": "test"
+                },
+                "interval_pattern": {
+                    "description": "支援 `0 0 * * * *` `@hourly` `1685935821`",
+                    "type": "string",
+                    "example": "0 * * * * *"
+                },
+                "name": {
+                    "description": "排程名稱",
+                    "type": "string",
+                    "example": "job01"
+                },
+                "nsq_message": {
+                    "description": "nsq回傳的訊息 ex.{\"game_name\": \"BBLT\",\"draw_mode\":1,\"open_timestamp\": 1686116327,\"close_timestamp\": 1686116387}",
+                    "type": "string",
+                    "example": ""
+                },
+                "nsq_topic": {
+                    "description": "type選擇nsq,topic不能為空",
+                    "type": "string",
+                    "example": ""
+                },
+                "request_url": {
+                    "description": "網址",
+                    "type": "string",
+                    "example": "http://127.0.0.1/api/ping"
+                },
+                "retry": {
+                    "description": "true: http失敗重新執行",
+                    "type": "boolean",
+                    "example": false
+                },
+                "type": {
+                    "description": "`nsq` `http`",
+                    "type": "string",
+                    "example": "http"
+                }
+            }
+        },
+        "httpserver.DataRespSchema": {
+            "type": "object",
+            "properties": {
+                "data": {},
+                "errors": {
+                    "type": "array",
+                    "items": {}
+                }
+            }
+        },
+        "httpserver.Pong": {
+            "type": "object",
+            "properties": {
+                "pong": {
+                    "type": "string"
+                }
+            }
+        },
+        "httpserver.SuccessRes": {
+            "type": "object",
+            "properties": {
+                "errors": {
+                    "type": "array",
+                    "items": {}
+                },
+                "success": {
+                    "type": "boolean"
+                }
+            }
+        }
+    }
+}
