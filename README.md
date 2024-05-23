@@ -7,8 +7,6 @@
 - [cronJob 時區](#crontab-時區)
 - [swag 安裝](#swag-安裝)
 
-### crontab 時區
-
 #### 時區
   - Asia/Taipei
 
