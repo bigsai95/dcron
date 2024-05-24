@@ -77,35 +77,23 @@ func (j *TaskPayload) Run() {
 		"exec_time":  currentTime,
 	})
 
-	var isWithinExec bool
 	isOnce := lib.IsMemoOnce(j.Memo)
 	if isOnce {
-		// ExecRightNow 優先權 > lib.ShouldExecuteThreeHours
-		if j.ExecRightNow {
-			isWithinExec = true
-		} else {
-			isWithinExec = lib.ShouldExecuteThreeHours(j.Memo)
-		}
+		isWithinExec := j.ExecRightNow || lib.ShouldExecuteThreeHours(j.Memo)
 		if !isWithinExec {
 			logInfo.Debug("job cronjob expired")
-
-			// 過期太久期數不執行
 			j.runOnce()
 			return
 		}
-
-		lockKey := fmt.Sprintf("LOCK_ONCE_%s", j.JobID)
-		exists, err := redisCacher.Conn.SetNX(lockKey, "once", 30)
-		if !exists || err != nil {
+		if !j.acquireLock(fmt.Sprintf("LOCK_ONCE_%s", j.JobID), "once", 30) {
 			return
 		}
 	} else {
-		lockKey := fmt.Sprintf("LOCK_%s_%d", j.JobID, currentTime.Unix())
-		exists, err := redisCacher.Conn.SetNX(lockKey, 60, 5)
-		if !exists || err != nil {
+		if !j.acquireLock(fmt.Sprintf("LOCK_%s_%d", j.JobID, currentTime.Unix()), 60, 5) {
 			return
 		}
 	}
+
 	logInfo.Debug("job cronjob run")
 
 	switch j.Type {
@@ -118,38 +106,39 @@ func (j *TaskPayload) Run() {
 	}
 }
 
+func (j *TaskPayload) acquireLock(key string, value interface{}, expiration int64) bool {
+	exists, err := redisCacher.Conn.SetNX(key, value, expiration)
+	return exists && err == nil
+}
+
 func (j *TaskPayload) runTest() {
 	key := fmt.Sprintf("TestCheck_%s", j.Name)
 	redisCacher.Conn.Set(key, "test_ok", 20)
-
 	j.runOnce()
 }
 
 func (j *TaskPayload) runHttp() {
-	var maxCount int
+	maxCount := 0
 	if j.Retry {
 		maxCount = 3
 	}
 
 	m := httptarget.NewEntryScan(j.RequestUrl, maxCount)
 	res := m.Scan(context.Background())
-	if res.Code != 200 {
-		if res.Err != nil {
-			logger.WithFields(map[string]interface{}{
-				"func":       "payload_run",
-				"step":       "payload_run_http",
-				"group_name": j.GroupName,
-				"job_name":   j.Name,
-				"job_id":     j.JobID,
-				"url":        j.RequestUrl,
-				"cron_type":  j.Type,
-				"res_code":   res.Code,
-				"res_count":  res.Count,
-				"res_error":  res.Err.Error(),
-			}).Error("http error")
-		}
+	if res.Code != 200 && res.Err != nil {
+		logger.WithFields(map[string]interface{}{
+			"func":       "payload_run",
+			"step":       "payload_run_http",
+			"group_name": j.GroupName,
+			"job_name":   j.Name,
+			"job_id":     j.JobID,
+			"url":        j.RequestUrl,
+			"cron_type":  j.Type,
+			"res_code":   res.Code,
+			"res_count":  res.Count,
+			"res_error":  res.Err.Error(),
+		}).Error("http error")
 	}
-
 	j.runOnce()
 }
 
@@ -168,40 +157,32 @@ func (j *TaskPayload) runNsq() {
 			"err":        err.Error(),
 		}).Error("nsq error")
 	}
-
 	j.runOnce()
 }
 
 func (j *TaskPayload) runOnce() {
-	isOnce := lib.IsMemoOnce(j.Memo)
-	if !isOnce {
-		var prev, next time.Time
-		entryID, ok := Mgr.LoadJobMapping(j.JobID)
-		if ok {
-			dataEntry := Mgr.Entry(entryID)
-			next = dataEntry.Next
-			prev = dataEntry.Prev
-		}
-		values := map[string]interface{}{
-			"next": next,
-			"prev": prev,
-		}
-		key := fmt.Sprintf("TIME_%s_%s", j.GroupName, j.JobID)
-		redisCacher.Conn.HSet(key, values, 2*24*60*60)
-
+	if lib.IsMemoOnce(j.Memo) {
+		j.cleanUpOnce()
 		return
 	}
 
-	key := fmt.Sprintf("TEAM_%s", j.GroupName)
-	redisCacher.Conn.HDel(key, j.Name)
+	entryID, ok := Mgr.LoadJobMapping(j.JobID)
+	if ok {
+		dataEntry := Mgr.Entry(entryID)
+		values := map[string]interface{}{
+			"next": dataEntry.Next,
+			"prev": dataEntry.Prev,
+		}
+		key := fmt.Sprintf("TIME_%s_%s", j.GroupName, j.JobID)
+		redisCacher.Conn.HSet(key, values, 2*24*60*60)
+	}
+}
 
-	key = fmt.Sprintf("CK_%s_%s", j.GroupName, j.Name)
-	redisCacher.Conn.Del(key)
+func (j *TaskPayload) cleanUpOnce() {
+	redisCacher.Conn.HDel(fmt.Sprintf("TEAM_%s", j.GroupName), j.Name)
+	redisCacher.Conn.Del(fmt.Sprintf("CK_%s_%s", j.GroupName, j.Name))
+	redisCacher.Conn.Del(fmt.Sprintf("TASK_%s_%s", j.GroupName, j.JobID))
 
-	key = fmt.Sprintf("TASK_%s_%s", j.GroupName, j.JobID)
-	redisCacher.Conn.Del(key)
-
-	// 一次性的排程移除
 	entryID, ok := Mgr.LoadJobMapping(j.JobID)
 	if ok {
 		Mgr.Remove(entryID)
