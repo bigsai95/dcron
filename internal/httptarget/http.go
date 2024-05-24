@@ -17,7 +17,7 @@ type ITarget interface {
 
 var (
 	httpConn  = make(map[string]*ghc.Client)
-	httpMutex sync.Mutex
+	httpMutex sync.RWMutex
 )
 
 type Service struct {
@@ -28,7 +28,7 @@ type Service struct {
 func (s *Service) NewTarget(ctx context.Context, apiUrl string) error {
 	u, err := url.ParseRequestURI(apiUrl)
 	if err != nil {
-		return err
+		return fmt.Errorf("invalid URL: %w", err)
 	}
 
 	host := u.Host
@@ -38,15 +38,21 @@ func (s *Service) NewTarget(ctx context.Context, apiUrl string) error {
 	}
 	s.ApiPath = u.Path
 
-	httpMutex.Lock()
+	httpMutex.RLock()
 	conn, ok := httpConn[host]
-	httpMutex.Unlock()
+	httpMutex.RUnlock()
 
 	if ok {
 		s.HttpConn = conn
 	} else {
 		httpMutex.Lock()
 		defer httpMutex.Unlock()
+
+		// Recheck to avoid race condition
+		if conn, ok := httpConn[host]; ok {
+			s.HttpConn = conn
+			return nil
+		}
 
 		opts := []ghc.ClientOption{
 			ghc.WithDefaultHeaders(),
@@ -64,5 +70,9 @@ func (s *Service) NewTarget(ctx context.Context, apiUrl string) error {
 }
 
 func (s *Service) GetResponse(ctx context.Context) (*ghc.Response, error) {
+	if s.HttpConn == nil {
+		return nil, fmt.Errorf("HTTP connection is not initialized")
+	}
+
 	return s.HttpConn.Get(ctx, s.ApiPath)
 }
