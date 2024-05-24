@@ -92,36 +92,43 @@ func (cm *CronManager) ImportJobs(jobs []TaskPayload) {
 
 	worker := server.GetServerInstance().GetWorker()
 
-	for _, v := range jobs {
-		job := v
-
+	for _, job := range jobs {
 		if job.Status == 1 && job.JobID != "" {
 			wg.Add(1)
-			worker.JobQueue(goworker.DoJob(func(i []interface{}) {
+			jobCopy := job
+			worker.JobQueue(goworker.DoJob(func(_ []interface{}) {
 				defer wg.Done()
-				if lib.ShouldExecuteNow(job.Memo) {
-					job.Run()
-					return
-				}
-
-				if strings.HasPrefix(job.IntervalPattern, every) {
-					duration, _ := time.ParseDuration(job.IntervalPattern[len(every):])
-					timeNext := lib.CalculateNextRunTime(now, job.Next, duration)
-					delay := timeNext.Sub(now)
-					if delay > 0 {
-						time.AfterFunc(delay, func() {
-							cm.ImportAddJobs(job)
-						})
-					}
-				} else {
-					cm.ImportAddJobs(job)
-				}
+				cm.processJob(jobCopy, now)
 			}))
 		}
 	}
 	wg.Wait()
 	logger.Info("ImportJobs OK")
+}
 
+func (cm *CronManager) processJob(job TaskPayload, now time.Time) {
+	if lib.ShouldExecuteNow(job.Memo) {
+		job.Run()
+		return
+	}
+
+	if strings.HasPrefix(job.IntervalPattern, every) {
+		duration, err := time.ParseDuration(job.IntervalPattern[len(every):])
+		if err != nil {
+			logger.WithField("job_id", job.JobID).Errorf("Failed to parse duration: %v", err)
+			return
+		}
+
+		timeNext := lib.CalculateNextRunTime(now, job.Next, duration)
+		delay := timeNext.Sub(now)
+		if delay > 0 {
+			time.AfterFunc(delay, func() {
+				cm.ImportAddJobs(job)
+			})
+		}
+	} else {
+		cm.ImportAddJobs(job)
+	}
 }
 
 func (cm *CronManager) ImportAddJobs(payload TaskPayload) {
