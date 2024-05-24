@@ -340,8 +340,9 @@ func TestTTL(t *testing.T) {
 	assert.Equal(t, value, expectedValue)
 
 	tval, err := Conn.TTL(key)
+
 	assert.Nil(t, err)
-	assert.Equal(t, tval, 0)
+	assert.Equal(t, tval, -1)
 }
 
 func TestFlushall(t *testing.T) {

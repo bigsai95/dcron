@@ -170,56 +170,56 @@ func TestMatchJobName(t *testing.T) {
 		}
 	}{
 		{
-			input: "LT_DRAW_SCHEDULE",
+			input: "M1_DRAW_SCHEDULE",
 			expected: struct {
 				v1, v2 string
 			}{
-				v1: "LT",
+				v1: "M1",
 				v2: "",
 			},
 		},
 		{
-			input: "MCLT_DRAW_SCHEDULE",
+			input: "MM1T_DRAW_SCHEDULE",
 			expected: struct {
 				v1, v2 string
 			}{
-				v1: "MCLT",
+				v1: "MM1T",
 				v2: "",
 			},
 		},
 		{
-			input: "BBGE_DRAW_SCHEDULE",
+			input: "BM1E_DRAW_SCHEDULE",
 			expected: struct {
 				v1, v2 string
 			}{
-				v1: "BBGE",
+				v1: "BM1E",
 				v2: "",
 			},
 		},
 		{
-			input: "BBGE_TRIGGER_GAME_ROUND_202307181440_ROUND_2_ACTIVE",
+			input: "BM1E_GAME_ROUND_202307181440_ROUND_2_ACTIVE",
 			expected: struct {
 				v1, v2 string
 			}{
-				v1: "BBGE",
+				v1: "BM1E",
 				v2: "202307181440",
 			},
 		},
 		{
-			input: "B1SF_TRIGGER_GAME_CLOSE_202307181295",
+			input: "BM1E_TRIR_GAME_CLOSE_202307181295",
 			expected: struct {
 				v1, v2 string
 			}{
-				v1: "B1SF",
+				v1: "BM1E",
 				v2: "202307181295",
 			},
 		},
 		{
-			input: "BBFS_TRIGGER_GAME_OPEN_202307181294",
+			input: "BM1S_TRR_GAME_OPEN_202307181294",
 			expected: struct {
 				v1, v2 string
 			}{
-				v1: "BBFS",
+				v1: "BM1S",
 				v2: "202307181294",
 			},
 		},
