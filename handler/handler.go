@@ -44,54 +44,9 @@ func (s *Server) AddJob(ctx context.Context, d1 *TaskPayloadRequest) (d0 *DataRe
 	)
 	d0 = &DataReply{}
 
-	payload := cronjob.TaskPayload{
-		GroupName:       d1.GroupName,
-		Name:            d1.Name,
-		ExecRightNow:    d1.ExecRightNow,
-		RequestUrl:      d1.RequestUrl,
-		Retry:           d1.Retry,
-		IntervalPattern: d1.IntervalPattern,
-		Type:            d1.Type,
-		NsqTopic:        d1.NsqTopic,
-		NsqMessage:      d1.NsqMessage,
-	}
-
-	if payload.GroupName == "" {
-		err = errors.New(ctl.EmptyGroupNameErrMsg)
-		return
-	}
-	if payload.Name == "" {
-		err = errors.New(ctl.EmptyNameErrMsg)
-		return
-	}
-	payload.Type = strings.ToLower(payload.Type)
-	if payload.Type == "" {
-		err = errors.New("type is empty")
-		return
-	} else if payload.Type == cronjob.HttpMode {
-		if payload.RequestUrl == "" {
-			err = errors.New("url is empty")
-			return
-		}
-		_, err = url.ParseRequestURI(payload.RequestUrl)
-		if err != nil {
-			return
-		}
-	} else if payload.Type == cronjob.NsqMode {
-		if payload.NsqTopic == "" {
-			err = errors.New("nsq topic is empty")
-			return
-		}
-		if payload.NsqMessage == "" {
-			err = errors.New("nsq message is empty")
-			return
-		}
-		var dataJson map[string]interface{}
-		err = json.Unmarshal([]byte(payload.NsqMessage), &dataJson)
-		if err != nil {
-			err = errors.New("nsq message is not josn")
-			return
-		}
+	payload, err := s.validateAndBuildPayload(d1)
+	if err != nil {
+		return d0, err
 	}
 
 	loc, _ := time.LoadLocation("Asia/Taipei")
@@ -157,10 +112,8 @@ func (s *Server) AddJob(ctx context.Context, d1 *TaskPayloadRequest) (d0 *DataRe
 
 	}
 
-	t1 := taskTime.IntPart()
-	crontime := time.Unix(t1, 0).In(loc)
-	execTime := crontime.Add(600 * time.Millisecond)
-	delay := execTime.Sub(now)
+	delay := calculateDelay(taskTime, now, loc)
+
 	formattedDelay := fmt.Sprintf("%.2f", delay.Seconds())
 
 	logInfo.WithField("delay_time", formattedDelay).Debug("job add success")
@@ -179,4 +132,55 @@ func (s *Server) AddJob(ctx context.Context, d1 *TaskPayloadRequest) (d0 *DataRe
 	d0.Success = true
 
 	return d0, err
+}
+
+func calculateDelay(taskTime decimal.Decimal, now time.Time, loc *time.Location) time.Duration {
+	t1 := taskTime.IntPart()
+	crontime := time.Unix(t1, 0).In(loc)
+	execTime := crontime.Add(600 * time.Millisecond)
+	return execTime.Sub(now)
+}
+
+func (s *Server) validateAndBuildPayload(d1 *TaskPayloadRequest) (cronjob.TaskPayload, error) {
+	payload := cronjob.TaskPayload{
+		GroupName:       d1.GroupName,
+		Name:            d1.Name,
+		ExecRightNow:    d1.ExecRightNow,
+		RequestUrl:      d1.RequestUrl,
+		Retry:           d1.Retry,
+		IntervalPattern: d1.IntervalPattern,
+		Type:            strings.ToLower(d1.Type),
+		NsqTopic:        d1.NsqTopic,
+		NsqMessage:      d1.NsqMessage,
+	}
+
+	if payload.GroupName == "" {
+		return payload, errors.New(ctl.EmptyGroupNameErrMsg)
+	}
+	if payload.Name == "" {
+		return payload, errors.New(ctl.EmptyNameErrMsg)
+	}
+	if payload.Type == "" {
+		return payload, errors.New("type is empty")
+	}
+	if payload.Type == cronjob.HttpMode {
+		if payload.RequestUrl == "" {
+			return payload, errors.New("url is empty")
+		}
+		if _, err := url.ParseRequestURI(payload.RequestUrl); err != nil {
+			return payload, err
+		}
+	} else if payload.Type == cronjob.NsqMode {
+		if payload.NsqTopic == "" {
+			return payload, errors.New("nsq topic is empty")
+		}
+		if payload.NsqMessage == "" {
+			return payload, errors.New("nsq message is empty")
+		}
+		if err := json.Unmarshal([]byte(payload.NsqMessage), &map[string]interface{}{}); err != nil {
+			return payload, errors.New("nsq message is not json")
+		}
+	}
+
+	return payload, nil
 }
