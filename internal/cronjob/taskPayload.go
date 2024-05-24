@@ -14,8 +14,6 @@ const (
 	HttpMode = "http"
 	NsqMode  = "nsq"
 	TestMode = "test"
-
-	ListenChannel = "dgua_event_channel"
 )
 
 type PubJob struct {
