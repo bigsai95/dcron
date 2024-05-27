@@ -40,23 +40,6 @@ func ListGroup(c *gin.Context) {
 	c.Data(200, jsonContentType, DataResp(records))
 }
 
-// @Summary 查詢排程遊戲清單
-// @Tags 	CronJob Query
-// @Produce json
-// @Param 	group_name query string true "group_name"
-// @Success 200 {object} DataRespSchema{data=[]string} "{"data":["test"],"errors":[]}"
-// @Router  /api/game/list [get]
-func ListGame(c *gin.Context) {
-	groupName := c.Query("group_name")
-	if groupName == "" {
-		c.JSON(200, ErrorDataRes(ctl.EmptyGroupNameErrMsg))
-		return
-	}
-	records, _ := ctl.FetchGameList(groupName)
-
-	c.Data(200, jsonContentType, DataResp(records))
-}
-
 // @Summary 查詢已註冊排程任務清單 By Group
 // @Tags 	CronJob Tasks List
 // @Produce json

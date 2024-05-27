@@ -15,49 +15,6 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/api/game/list": {
-            "get": {
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "CronJob Query"
-                ],
-                "summary": "查詢排程遊戲清單",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "group_name",
-                        "name": "group_name",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "{\"data\":[\"test\"],\"errors\":[]}",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/httpserver.DataRespSchema"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "type": "array",
-                                            "items": {
-                                                "type": "string"
-                                            }
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            }
-        },
         "/api/group/list": {
             "get": {
                 "produces": [

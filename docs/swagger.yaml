@@ -116,31 +116,6 @@ definitions:
 info:
   contact: {}
 paths:
-  /api/game/list:
-    get:
-      parameters:
-      - description: group_name
-        in: query
-        name: group_name
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: '{"data":["test"],"errors":[]}'
-          schema:
-            allOf:
-            - $ref: '#/definitions/httpserver.DataRespSchema'
-            - properties:
-                data:
-                  items:
-                    type: string
-                  type: array
-              type: object
-      summary: 查詢排程遊戲清單
-      tags:
-      - CronJob Query
   /api/group/list:
     get:
       produces:

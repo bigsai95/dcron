@@ -59,7 +59,6 @@ func (j *TaskPayload) Run() {
 	currentTime := time.Now().In(loc)
 	t1 := currentTime.UnixMilli()
 
-	gType, gNum := lib.MatchJobName(j.Name)
 	logInfo := logger.WithFields(map[string]interface{}{
 		"func":       "payload_run",
 		"group_name": j.GroupName,
@@ -69,8 +68,6 @@ func (j *TaskPayload) Run() {
 		"memo":       j.Memo,
 		"nsq_topic":  j.NsqTopic,
 		"run_params": j.NsqMessage,
-		"game_type":  gType,
-		"game_num":   gNum,
 		"cron_time":  t1,
 		"exec_time":  currentTime,
 	})

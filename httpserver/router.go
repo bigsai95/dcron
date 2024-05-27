@@ -16,7 +16,6 @@ func InitRouter(ginEngine *gin.Engine) (ginEngineDone *gin.Engine, err error) {
 	apiEngine := ginEngine.Group("/api")
 	apiEngine.GET("/ping", Ping)
 	apiEngine.GET("/group/list", ListGroup)
-	apiEngine.GET("/game/list", ListGame)
 	apiEngine.GET("/job/list", ListJobByGroup)
 	apiEngine.GET("/job/match/list", ListJobByMatch)
 	apiEngine.GET("/job/game/list", ListJobByGame)

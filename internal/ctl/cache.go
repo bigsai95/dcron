@@ -42,32 +42,6 @@ func FetchGroupList() ([]string, error) {
 	return ret, nil
 }
 
-// 取出註冊group的遊戲列表
-func FetchGameList(groupName string) ([]string, error) {
-	games := make([]string, 0)
-
-	key := fmt.Sprintf("TEAM_%s", groupName)
-	groupJobs, err := redisCacher.Conn.HGetAll(key)
-	if err != nil {
-		return games, err
-	}
-
-	gamesSet := make(map[string]bool)
-	for k := range groupJobs {
-		gType, _ := lib.MatchJobName(k)
-		if gType != "" {
-			gamesSet[gType] = true
-		}
-	}
-
-	for gType := range gamesSet {
-		games = append(games, gType)
-	}
-	sort.Strings(games)
-
-	return games, nil
-}
-
 /*
  * 註冊 group
  * redis資料格式

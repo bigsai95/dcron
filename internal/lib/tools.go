@@ -16,17 +16,6 @@ var (
 	onceRegex = regexp.MustCompile("@once")
 )
 
-func MatchJobName(str string) (v1, v2 string) {
-	match := re.FindStringSubmatch(str)
-	if match == nil {
-		return "", ""
-	}
-
-	v1 = match[1]
-	v2 = match[4]
-	return v1, v2
-}
-
 // 是否為一次性的排程任務
 func IsMemoOnce(memo string) bool {
 	return onceRegex.MatchString(memo)

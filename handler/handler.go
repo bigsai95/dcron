@@ -64,7 +64,6 @@ func (s *Server) AddJob(ctx context.Context, d1 *TaskPayloadRequest) (d0 *DataRe
 	payload.Status = 1
 	payload.Register = now
 
-	gType, gNum := lib.MatchJobName(payload.Name)
 	logInfo := server.GetServerInstance().GetLogger().WithFields(map[string]interface{}{
 		"func":       "job_add_register",
 		"trace_id":   traceID,
@@ -75,8 +74,6 @@ func (s *Server) AddJob(ctx context.Context, d1 *TaskPayloadRequest) (d0 *DataRe
 		"memo":       payload.Memo,
 		"nsq_topic":  payload.NsqTopic,
 		"run_params": payload.NsqMessage,
-		"game_type":  gType,
-		"game_num":   gNum,
 	})
 
 	exists, err := ctl.AcquireLock(payload.GroupName, payload.Name, 0)
