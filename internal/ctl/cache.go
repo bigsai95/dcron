@@ -4,7 +4,6 @@ import (
 	"dcron/internal/cronjob"
 	"dcron/internal/lib"
 	"dcron/internal/redisCacher"
-	"encoding/json"
 	"fmt"
 	"regexp"
 	"sort"
@@ -68,20 +67,29 @@ func SetJobGroup(groupName, name, jobID string) error {
  * ["interval_pattern"] = 0 * * * * *
  */
 func SetTaskPayload(payload cronjob.TaskPayload, ttl int64) error {
-	err := SetJobGroup(payload.GroupName, payload.Name, payload.JobID)
-	if err != nil {
+
+	if err := SetJobGroup(payload.GroupName, payload.Name, payload.JobID); err != nil {
 		return err
 	}
 
-	var params map[string]interface{}
-	b, err := json.Marshal(payload)
-	if err != nil {
-		return err
+	params := map[string]interface{}{
+		"job_id":           payload.JobID,
+		"group_name":       payload.GroupName,
+		"name":             payload.Name,
+		"exec_right_now":   payload.ExecRightNow,
+		"request_url":      payload.RequestUrl,
+		"retry":            payload.Retry,
+		"interval_pattern": payload.IntervalPattern,
+		"type":             payload.Type,
+		"status":           payload.Status,
+		"nsq_topic":        payload.NsqTopic,
+		"nsq_message":      payload.NsqMessage,
+		"register":         payload.Register.Format(time.RFC3339),
+		"prev":             payload.Prev.Format(time.RFC3339),
+		"next":             payload.Next.Format(time.RFC3339),
+		"memo":             payload.Memo,
 	}
-	err = json.Unmarshal(b, &params)
-	if err != nil {
-		return err
-	}
+
 	// 任務註冊表
 	key := fmt.Sprintf("TASK_%s_%s", payload.GroupName, payload.JobID)
 
@@ -92,22 +100,46 @@ func SetTaskPayload(payload cronjob.TaskPayload, ttl int64) error {
 func MapTaskPayload(data map[string]string) cronjob.TaskPayload {
 	var prev, next time.Time
 
-	execRightNow, _ := strconv.ParseBool(data["exec_right_now"])
-	retry, _ := strconv.ParseBool(data["retry"])
-	status, _ := strconv.Atoi(data["status"])
-	register, _ := time.Parse(time.RFC3339, data["register"])
-	prev, _ = time.Parse(time.RFC3339, data["prev"])
+	execRightNow, err := strconv.ParseBool(data["exec_right_now"])
+	if err != nil {
+		execRightNow = false
+	}
+
+	retry, err := strconv.ParseBool(data["retry"])
+	if err != nil {
+		retry = false
+	}
+
+	status, err := strconv.Atoi(data["status"])
+	if err != nil {
+		status = 0
+	}
+
+	register, err := time.Parse(time.RFC3339, data["register"])
+	if err != nil {
+		register = time.Time{}
+	}
+
+	prev, err = time.Parse(time.RFC3339, data["prev"])
+	if err != nil {
+		prev = time.Time{}
+	}
 
 	key := fmt.Sprintf("TIME_%s_%s", data["group_name"], data["job_id"])
-	timeMaps, _ := redisCacher.Conn.HGetAll(key)
-
-	value, ok := timeMaps["prev"]
-	if ok {
-		prev, _ = time.Parse(time.RFC3339, value)
-	}
-	value, ok = timeMaps["next"]
-	if ok {
-		next, _ = time.Parse(time.RFC3339, value)
+	timeMaps, err := redisCacher.Conn.HGetAll(key)
+	if err == nil {
+		if value, ok := timeMaps["prev"]; ok {
+			prev, err = time.Parse(time.RFC3339, value)
+			if err != nil {
+				prev = time.Time{}
+			}
+		}
+		if value, ok := timeMaps["next"]; ok {
+			next, err = time.Parse(time.RFC3339, value)
+			if err != nil {
+				next = time.Time{}
+			}
+		}
 	}
 
 	return cronjob.TaskPayload{
