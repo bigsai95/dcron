@@ -135,15 +135,13 @@ func (cm *CronManager) ImportAddJobs(payload TaskPayload) {
 }
 
 func (cm *CronManager) FormatSchedule(cronSchedule string) string {
-	loc, _ := time.LoadLocation("Asia/Taipei")
-
 	n, err := decimal.NewFromString(cronSchedule)
 	if err != nil {
 		return cronSchedule
 	}
 
 	// 解析时间戳为时间
-	t := time.Unix(n.IntPart(), 0).In(loc)
+	t := time.Unix(n.IntPart(), 0).In(defaultLocation)
 
 	// 将时间转换为cron格式
 	cronParts := []string{
