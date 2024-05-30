@@ -9,6 +9,7 @@ type entryScan struct {
 	TryMaxCount int
 	Url         string
 	Target      ITarget
+	Ctx         context.Context
 }
 
 type EntryScanBody struct {
@@ -18,7 +19,7 @@ type EntryScanBody struct {
 	Err   error
 }
 
-func NewEntryScan(requestUrl string, maxCount int) *entryScan {
+func NewEntryScan(ctx context.Context, requestUrl string, maxCount int) *entryScan {
 	target := &Service{}
 
 	if maxCount < 1 {
@@ -26,21 +27,22 @@ func NewEntryScan(requestUrl string, maxCount int) *entryScan {
 	}
 
 	return &entryScan{
+		Ctx:         ctx,
 		Url:         requestUrl,
 		Target:      target,
 		TryMaxCount: maxCount,
 	}
 }
 
-func (m *entryScan) Scan(ctx context.Context) *EntryScanBody {
+func (m *entryScan) Scan() *EntryScanBody {
 	ret := &EntryScanBody{}
-	err := m.Target.NewTarget(ctx, m.Url)
+	err := m.Target.NewTarget(m.Ctx, m.Url)
 	if err != nil {
 		return ret
 	}
 
 	for n := 1; n <= m.TryMaxCount; n++ {
-		res, err := m.Target.GetResponse(ctx)
+		res, err := m.Target.GetResponse()
 
 		ret.Count = n
 		if err != nil {

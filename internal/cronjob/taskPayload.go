@@ -118,8 +118,7 @@ func (j *TaskPayload) runHttp() {
 		maxCount = 3
 	}
 
-	m := httptarget.NewEntryScan(j.RequestUrl, maxCount)
-	res := m.Scan(context.Background())
+	res := httptarget.NewEntryScan(context.Background(), j.RequestUrl, maxCount).Scan()
 	if res.Code != 200 && res.Err != nil {
 		logger.WithFields(map[string]interface{}{
 			"func":       "payload_run",

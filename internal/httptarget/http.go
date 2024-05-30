@@ -12,7 +12,7 @@ import (
 
 type ITarget interface {
 	NewTarget(ctx context.Context, apiUrl string) error
-	GetResponse(ctx context.Context) (*ghc.Response, error)
+	GetResponse() (*ghc.Response, error)
 }
 
 var (
@@ -23,6 +23,7 @@ var (
 type Service struct {
 	HttpConn *ghc.Client
 	ApiPath  string
+	Ctx      context.Context
 }
 
 func (s *Service) NewTarget(ctx context.Context, apiUrl string) error {
@@ -36,6 +37,7 @@ func (s *Service) NewTarget(ctx context.Context, apiUrl string) error {
 	if u.Path == "" {
 		u.Path = "/"
 	}
+	s.Ctx = ctx
 	s.ApiPath = u.Path
 
 	httpMutex.RLock()
@@ -69,10 +71,10 @@ func (s *Service) NewTarget(ctx context.Context, apiUrl string) error {
 	return nil
 }
 
-func (s *Service) GetResponse(ctx context.Context) (*ghc.Response, error) {
+func (s *Service) GetResponse() (*ghc.Response, error) {
 	if s.HttpConn == nil {
 		return nil, fmt.Errorf("HTTP connection is not initialized")
 	}
 
-	return s.HttpConn.Get(ctx, s.ApiPath)
+	return s.HttpConn.Get(s.Ctx, s.ApiPath)
 }
