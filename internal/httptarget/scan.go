@@ -49,14 +49,15 @@ func (m *entryScan) Scan() *EntryScanBody {
 			ret.Err = err
 		} else {
 			ret.Code = res.Status()
+			if ret.Code == 200 {
+				ret.Body = string(res.Body())
+				break
+			}
 		}
 
-		if ret.Code == 200 {
-			ret.Body = string(res.Body())
-			break
+		if err != nil || ret.Code != 200 {
+			time.Sleep(100 * time.Millisecond)
 		}
-
-		time.Sleep(100 * time.Millisecond)
 	}
 
 	return ret
