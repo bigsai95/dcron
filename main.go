@@ -118,5 +118,5 @@ func loadConfig(ctx context.Context) {
 	snowflake.ConfigInit()
 
 	// 調整 cronjob 啟動流程,避免 cronjob 未準備好, 就有註冊資料進來
-	go cronjob.StartInit(ctx, false)
+	go cronjob.Mgr.StartInit(ctx, false)
 }

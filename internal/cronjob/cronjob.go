@@ -5,7 +5,6 @@ import (
 	"dcron/internal/goworker"
 	"dcron/internal/lib"
 	"dcron/server"
-	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -19,54 +18,49 @@ import (
 const every = "@every "
 
 var (
-	PingSuccessful bool
-	c              *cron.Cron
-	mutex          sync.Mutex
-	cronParser     cron.Parser = cron.NewParser(cron.SecondOptional | cron.Minute | cron.Hour | cron.Dom | cron.Month | cron.Dow | cron.Descriptor)
-	logger         *logrus.Logger
-	Mgr            *CronManager
+	logger             *logrus.Logger
+	Mgr                *CronManager
+	defaultLocation, _ = time.LoadLocation("Asia/Taipei")
 )
 
 type CronManager struct {
-	jobMap  sync.Map
-	running bool
+	jobMap         sync.Map
+	running        bool
+	cron           *cron.Cron
+	mutex          sync.Mutex
+	pingSuccessful bool
+	cronParser     cron.Parser
 }
 
 func ConfigInit() {
-	glogger := server.GetServerInstance().GetLogger()
-	if glogger == nil {
-		glogger = logrus.New()
+	logger = server.GetServerInstance().GetLogger()
 
-		glogger.SetFormatter(&logrus.JSONFormatter{})
-
-		glogger.SetOutput(os.Stdout)
-
-		glogger.SetLevel(logrus.DebugLevel)
-	}
-
-	logger = glogger
-	Mgr = &CronManager{}
+	Mgr = NewCronManager()
 }
 
-func StartInit(ctx context.Context, testing bool) {
-	loc, _ := time.LoadLocation("Asia/Taipei")
+func NewCronManager() *CronManager {
+	return &CronManager{
+		cronParser: cron.NewParser(cron.SecondOptional | cron.Minute | cron.Hour | cron.Dom | cron.Month | cron.Dow | cron.Descriptor),
+	}
+}
 
-	mutex.Lock()
-	c = cron.New(cron.WithSeconds(), cron.WithLocation(loc), cron.WithParser(cronParser))
-	mutex.Unlock()
+func (cm *CronManager) StartInit(ctx context.Context, testing bool) {
+	cm.mutex.Lock()
+	cm.cron = cron.New(cron.WithSeconds(), cron.WithLocation(defaultLocation), cron.WithParser(cm.cronParser))
+	cm.mutex.Unlock()
 
-	Mgr.Start()
+	cm.Start()
 
 	logger.Info("Cronjob Start...")
 
 	if !testing {
 		select {
 		case <-ctx.Done():
-			Mgr.SetPingSuccessful(false)
+			cm.SetPingSuccessful(false)
 
 			time.Sleep(200 * time.Microsecond)
 
-			Mgr.Stop()
+			cm.Stop()
 			logger.Info("Cronjob End...")
 			return
 		}
@@ -74,21 +68,20 @@ func StartInit(ctx context.Context, testing bool) {
 }
 
 func (cm *CronManager) SetPingSuccessful(success bool) {
-	mutex.Lock()
-	defer mutex.Unlock()
-	PingSuccessful = success
+	cm.mutex.Lock()
+	defer cm.mutex.Unlock()
+	cm.pingSuccessful = success
 }
 
 func (cm *CronManager) GetPingSuccessful() bool {
-	mutex.Lock()
-	defer mutex.Unlock()
-	return PingSuccessful
+	cm.mutex.Lock()
+	defer cm.mutex.Unlock()
+	return cm.pingSuccessful
 }
 
 func (cm *CronManager) ImportJobs(jobs []TaskPayload) {
 	var wg sync.WaitGroup
-	loc, _ := time.LoadLocation("Asia/Taipei")
-	now := time.Now().In(loc)
+	now := time.Now().In(defaultLocation)
 
 	worker := server.GetServerInstance().GetWorker()
 
@@ -132,9 +125,9 @@ func (cm *CronManager) processJob(job TaskPayload, now time.Time) {
 }
 
 func (cm *CronManager) ImportAddJobs(payload TaskPayload) {
-	mutex.Lock()
-	defer mutex.Unlock()
-	entryID, err := c.AddJob(payload.IntervalPattern, &payload)
+	cm.mutex.Lock()
+	defer cm.mutex.Unlock()
+	entryID, err := cm.cron.AddJob(payload.IntervalPattern, &payload)
 	if err == nil {
 		// 儲存任務和 Cron Entry 的對應關係
 		cm.StoreJobMapping(payload.JobID, entryID)
@@ -169,9 +162,9 @@ func (cm *CronManager) FormatSchedule(cronSchedule string) string {
 func (cm *CronManager) Parse(cronSchedule string) (string, error) {
 	cronSchedule = cm.FormatSchedule(cronSchedule)
 
-	mutex.Lock()
-	_, err := cronParser.Parse(cronSchedule)
-	mutex.Unlock()
+	cm.mutex.Lock()
+	defer cm.mutex.Unlock()
+	_, err := cm.cronParser.Parse(cronSchedule)
 	if err != nil {
 		return "", err
 	}
@@ -179,46 +172,51 @@ func (cm *CronManager) Parse(cronSchedule string) (string, error) {
 }
 
 func (cm *CronManager) GetRunning() bool {
+	cm.mutex.Lock()
+	defer cm.mutex.Unlock()
 	return cm.running
 }
 
 func (cm *CronManager) Start() {
-	mutex.Lock()
-	defer mutex.Unlock()
+	cm.mutex.Lock()
+	defer cm.mutex.Unlock()
 	if cm.running {
 		return
 	}
 	cm.running = true
-	c.Start()
+	cm.cron.Start()
 }
 
 func (cm *CronManager) Stop() {
-	mutex.Lock()
-	defer mutex.Unlock()
+	cm.mutex.Lock()
+	defer cm.mutex.Unlock()
+	if !cm.running {
+		return
+	}
 	cm.running = false
-	c.Stop()
+	cm.cron.Stop()
 }
 
 func (cm *CronManager) Remove(entryID cron.EntryID) {
-	c.Remove(entryID)
+	cm.cron.Remove(entryID)
 }
 
 func (cm *CronManager) Location() string {
-	return c.Location().String()
+	return cm.cron.Location().String()
 }
 
 func (cm *CronManager) AddFunc(spec string, cmd func()) (cron.EntryID, error) {
-	return c.AddFunc(spec, cmd)
+	return cm.cron.AddFunc(spec, cmd)
 }
 
 func (cm *CronManager) AddJob(spec string, cmd cron.Job) (cron.EntryID, error) {
-	return c.AddJob(spec, cmd)
+	return cm.cron.AddJob(spec, cmd)
 }
 
 func (cm *CronManager) Entry(entryID cron.EntryID) cron.Entry {
-	return c.Entry(entryID)
+	return cm.cron.Entry(entryID)
 }
 
 func (cm *CronManager) Entries() []cron.Entry {
-	return c.Entries()
+	return cm.cron.Entries()
 }
